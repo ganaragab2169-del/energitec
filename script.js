@@ -28,33 +28,170 @@ window.onscroll = function () {
     }
 })();
 
+    /* =========================Language Switch==========================*/
 
-/** ==================== ========================== Ai Assistatnt ========================================*/
-const assistantToggle = document.getElementById('ai-assistant-toggle');
-const assistantClose = document.getElementById('ai-assistant-close');
-const assistantWindow = document.getElementById('ai-assistant-window');
+        const langSwitch = document.getElementById('languageToggle');
 
-if (assistantToggle) {
-    assistantToggle.addEventListener('click', function (e) {
-        e.stopPropagation();
-        const currentDisp = assistantWindow.style.display;
-        if (currentDisp === 'none' || currentDisp === '') {
-            assistantWindow.style.display = 'block';
-            this.style.transform = 'scale(0.9)';
-        } else {
-            assistantWindow.style.display = 'none';
-            this.style.transform = 'scale(1)';
+        if (langSwitch) {
+            langSwitch.onclick = function () {
+                const isArabic = this.innerText === 'EN';
+                const textsToTranslate = document.querySelectorAll('.lang-text');
+
+                if (isArabic) {
+                    this.innerText = 'AR';
+                    document.documentElement.dir = 'ltr';
+                    textsToTranslate.forEach(el => {
+                        if (!el.getAttribute('data-ar')) el.setAttribute('data-ar', el.innerText);
+                        el.innerText = el.getAttribute('data-en');
+                    });
+                } else {
+                    this.innerText = 'EN';
+                    document.documentElement.dir = 'rtl';
+                    textsToTranslate.forEach(el => {
+                        el.innerText = el.getAttribute('data-ar');
+                    });
+                }
+            };
         }
-    });
-}
+        /*========================================== Calc Power===================================*/
 
-if (assistantClose) {
-    assistantClose.addEventListener('click', function () {
-        assistantWindow.style.display = 'none';
-        assistantToggle.style.transform = 'scale(1)';
-    });
-}
 
+        document.addEventListener('DOMContentLoaded', function () {
+            const modal = document.getElementById('energy-modal');
+            const calcBtns = document.querySelectorAll('.calc-btn');
+            const closeBtn = document.getElementById('closeModalBtn');
+            const questions = [
+                { q: "ما هو نوع الإضاءة الرئيسي في منزلك؟", options: [{ t: "مصابيح LED بالكامل", p: 10 }, { t: "خليط بين LED وعادي", p: 40 }, { t: "مصابيح عادية (توهج)", p: 90 }] },
+                { q: "كم ساعة يعمل التكييف يومياً في الصيف؟", options: [{ t: "لا أستخدم تكييف", p: 0 }, { t: "من 1 إلى 4 ساعات", p: 120 }, { t: "أكثر من 6 ساعات", p: 250 }] },
+                { q: "كيف تعتمد على السخان الكهربائي؟", options: [{ t: "سخان غاز / شمسي", p: 0 }, { t: "يعمل وقت الاستخدام فقط", p: 50 }, { t: "يعمل طوال اليوم", p: 150 }] },
+                { q: "عدد الأجهزة الثقيلة (غسالة، مجفف، غسالة أطباق)؟", options: [{ t: "جهاز واحد أو أقل", p: 30 }, { t: "من 2 إلى 3 أجهزة", p: 80 }, { t: "أكثر من 3 أجهزة", p: 160 }] },
+                { q: "هل تقوم بفصل الأجهزة غير المستخدمة من القابس؟", options: [{ t: "دائماً (موفر جداً)", p: -10 }, { t: "أحياناً", p: 10 }, { t: "نادراً", p: 40 }] }
+            ];
+
+
+            let currentStep = 0;
+            let totalScore = 0;
+
+
+            function renderQuestion() {
+                const qText = document.getElementById('q-text');
+                const list = document.getElementById('options-list');
+                const bar = document.getElementById('bar');
+                const stepNum = document.getElementById('step-num');
+                const curr = questions[currentStep];
+                qText.classList.remove('animate-fade-in');
+                void qText.offsetWidth;
+                qText.classList.add('animate-fade-in');
+                qText.innerText = curr.q;
+                stepNum.innerText = `${currentStep + 1} / ${questions.length}`;
+                bar.style.width = ((currentStep + 1) / questions.length) * 100 + "%";
+
+                list.innerHTML = '';
+                curr.options.forEach((opt, index) => {
+                    const btn = document.createElement('button');
+                    btn.className = "option-btn-blue animate-fade-in";
+                    btn.style.animationDelay = (index * 0.1) + "s";
+                    btn.innerText = opt.t;
+                    btn.onclick = () => {
+                        totalScore += opt.p;
+                        if (++currentStep < questions.length) renderQuestion(); else showFinalResult();
+                    };
+                    list.appendChild(btn);
+                });
+            }
+
+
+            function showFinalResult() {
+                document.getElementById('quiz-content').classList.add('hidden');
+                const resultUI = document.getElementById('result-content');
+                resultUI.classList.remove('hidden');
+
+                const valEl = document.getElementById('user-val');
+                const advice = document.getElementById('advice-text');
+                const icon = document.getElementById('status-icon');
+                const label = document.getElementById('rating-label');
+
+
+                let count = 0;
+                const target = totalScore < 0 ? 0 : totalScore;
+                const speed = target / 50;
+                const timer = setInterval(() => {
+                    count += speed;
+                    if (count >= target) {
+                        valEl.innerText = Math.floor(target);
+                        clearInterval(timer);
+                    } else {
+                        valEl.innerText = Math.floor(count);
+                    }
+                }, 20);
+
+
+                if (target > 350) {
+                    icon.innerText = "🔥";
+                    label.innerText = "استهلاك مرتفع جداً";
+                    label.className = "text-red-400 font-bold tracking-widest text-sm uppercase mb-8";
+                    advice.innerText = "أنت تنفق الكثير! ننصحك فوراً بفحص الأجهزة القديمة والتحول للطاقة الشمسية لتوفير 70% من فاتورتك.";
+                } else if (target > 150) {
+                    icon.innerText = "⚡";
+                    label.innerText = "استهلاك متوسط";
+                    label.className = "text-blue-400 font-bold tracking-widest text-sm uppercase mb-8";
+                    advice.innerText = "استهلاكك في النطاق الطبيعي، ولكن يمكنك تقليله أكثر باستبدال ما تبقى من مصابيح بـ LED وفصل الأجهزة ليلاً.";
+                } else {
+                    icon.innerText = "🌿";
+                    label.innerText = "بطل توفير الطاقة";
+                    label.className = "text-emerald-400 font-bold tracking-widest text-sm uppercase mb-8";
+                    advice.innerText = "مذهل! أنت صديق للبيئة وموفر محترف. حافظ على هذا الأداء الرائع.";
+                }
+            }
+
+
+            window.closeEnergyModal = () => { modal.style.display = 'none'; };
+
+            calcBtns.forEach(btn => {
+                btn.onclick = (e) => {
+                    e.preventDefault();
+                    modal.style.display = 'flex';
+                    currentStep = 0; totalScore = 0;
+                    document.getElementById('quiz-content').classList.remove('hidden');
+                    document.getElementById('result-content').classList.add('hidden');
+                    renderQuestion();
+                };
+            });
+
+            if (closeBtn) closeBtn.onclick = closeEnergyModal;
+            window.onclick = (e) => { if (e.target == modal) closeEnergyModal(); };
+        });
+        ML = '';
+
+
+        /*============================== Change Color Theme ======================================*/
+
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIcon = themeToggle.querySelector('i');
+
+        if (themeToggle) {
+            themeToggle.onclick = function () {
+                document.body.classList.toggle('dark-theme');
+                if (document.body.classList.contains('dark-theme')) {
+                    themeIcon.classList.remove('fa-moon');
+                    themeIcon.classList.add('fa-sun');
+                    themeIcon.style.color = '#facc15';
+                } else {
+                    themeIcon.classList.remove('fa-sun');
+                    themeIcon.classList.add('fa-moon');
+                    themeIcon.style.color = '';
+                }
+
+                const currentTheme = document.body.classList.contains('dark-theme') ? 'dark' : 'light';
+                localStorage.setItem('theme', currentTheme);
+            };
+        }
+
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-theme');
+            themeIcon.classList.replace('fa-moon', 'fa-sun');
+            themeIcon.style.color = '#facc15';
+        }
 
 
 /* Extracted from index.html */
